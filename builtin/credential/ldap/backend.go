@@ -113,6 +113,16 @@ func (b *backend) Login(ctx context.Context, req *logical.Request, username stri
 		return nil, logical.ErrorResponse("ldap operation failed"), nil, nil
 	}
 
+	// Workaround issue with Google Secure LDAP
+	c.Close()
+	c, err = ldapClient.DialLDAP(cfg.ConfigEntry)
+	if err != nil {
+		return nil, logical.ErrorResponse(err.Error()), nil, nil
+	}
+	if c == nil {
+		return nil, logical.ErrorResponse("invalid connection returned from LDAP dial"), nil, nil
+	}
+	defer c.Close()
 	// We re-bind to the BindDN if it's defined because we assume
 	// the BindDN should be the one to search, not the user logging in.
 	if cfg.BindDN != "" && cfg.BindPassword != "" {
